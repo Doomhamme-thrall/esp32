@@ -29,16 +29,13 @@ float depth_data[1024] = {0};
 // 对应的时间
 int unix_time[1024] = {0};
 
-float pressure = 0;
-float temperature = 0;
-
 void app_main()
 {
     i2c_master_init();
     ms5837_reset();
 
-    uint16_t calibration_data[6];
-    ms5837_read_calibration_data(calibration_data);
+    // uint16_t calibration_data[6];
+    // ms5837_read_calibration_data(calibration_data);
 
     while (1)
     {
@@ -46,10 +43,10 @@ void app_main()
         uint32_t D2 = ms5837_read_temperature();
 
         float pressure, temperature;
-        ms5837_calculate(calibration_data, D1, D2, &pressure, &temperature);
+        ms5837_calculate(D1, D2, &pressure, &temperature);
 
-        printf("Pressure: %.2f mbar, Temperature: %.2f C\n", pressure, temperature);
+        printf("%.2f , %.2f \n", pressure, temperature);
 
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(10 / portTICK_PERIOD_MS);
     }
 }

@@ -87,7 +87,7 @@ extern "C"
      * @param pressure Pointer to store the compensated pressure (in mbar).
      * @param temperature Pointer to store the compensated temperature (in Celsius).
      */
-    void ms5837_calculate(const uint16_t *calibration_data, uint32_t D1, uint32_t D2, float *pressure, float *temperature);
+    void ms5837_calculate(uint32_t D1, uint32_t D2, float *pressure, float *temperature);
 
 #ifdef __cplusplus
 }

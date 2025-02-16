@@ -9,6 +9,8 @@
 
 #define MS5837_ADDR 0x76 // MS5837-30BA I2C address
 
+static int calibration_data[6] = {27919, 27937, 16806, 18058, 28925, 26652};
+
 void i2c_master_init()
 {
     i2c_config_t conf = {
@@ -64,6 +66,7 @@ void ms5837_read_calibration_data(uint16_t *calibration_data)
     {
         calibration_data[i] = ms5837_read_prom(i + 1);
     }
+    printf("C1: %d, C2: %d, C3: %d, C4: %d, C5: %d, C6: %d\n", calibration_data[0], calibration_data[1], calibration_data[2], calibration_data[3], calibration_data[4], calibration_data[5]);
 }
 
 uint32_t ms5837_read_adc(uint8_t cmd)
@@ -110,7 +113,7 @@ uint32_t ms5837_read_temperature()
     return ms5837_read_adc(0x58); // D2 conversion command
 }
 
-void ms5837_calculate(uint16_t *calibration_data, uint32_t D1, uint32_t D2, float *pressure, float *temperature)
+void ms5837_calculate(uint32_t D1, uint32_t D2, float *pressure, float *temperature)
 {
     int32_t dT = D2 - ((uint32_t)calibration_data[4] << 8);
     int32_t TEMP = 2000 + ((int64_t)dT * calibration_data[5] >> 23);
