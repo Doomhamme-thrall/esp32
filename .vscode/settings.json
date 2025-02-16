@@ -1,0 +1,12 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPathWin": "C:\\Users\\Administrator\\esp\\v5.4\\esp-idf",
+  "idf.openOcdConfigs": ["board/esp32-wrover-kit-3.3v.cfg"],
+  "idf.portWin": "COM14",
+  "idf.toolsPathWin": "C:\\Users\\Administrator\\.espressif",
+  "idf.flashType": "UART",
+  "files.associations": {
+    "ms5837.h": "c",
+    "sdkconfig.h": "c"
+  }
+}
