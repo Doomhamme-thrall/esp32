@@ -17,5 +17,5 @@ direct_dependencies:
 - espressif/cmake_utilities
 - idf
 manifest_hash: d9e44916097fa8cd98f43cb55b05503022f4e68f969f55aa3792f31930b1e7cb
-target: esp32
+target: esp32s3
 version: 2.0.0
