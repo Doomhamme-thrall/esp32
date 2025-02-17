@@ -4,11 +4,12 @@
 #define I2C_MASTER_SDA_IO 21        // GPIO number for I2C master data
 #define I2C_MASTER_NUM I2C_NUM_0    // I2C port number for master dev
 #define I2C_MASTER_FREQ_HZ 400000   // I2C master clock frequency
-#define I2C_MASTER_TX_BUF_DISABLE 0 // I2C master doesn't need buffer
-#define I2C_MASTER_RX_BUF_DISABLE 0 // I2C master doesn't need buffer
+#define I2C_MASTER_TX_BUF_DISABLE 0 
+#define I2C_MASTER_RX_BUF_DISABLE 0 
 
-#define MS5837_ADDR 0x76 // MS5837-30BA I2C address
+#define MS5837_ADDR 0x76 // MS5837 I2C address
 
+// 出厂校准数据
 static int calibration_data[6] = {27919, 27937, 16806, 18058, 28925, 26652};
 
 void i2c_master_init()
@@ -25,6 +26,7 @@ void i2c_master_init()
     i2c_driver_install(I2C_MASTER_NUM, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0);
 }
 
+// 复位
 void ms5837_reset()
 {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();
@@ -60,6 +62,7 @@ uint16_t ms5837_read_prom(uint8_t coef_num)
     return (data[0] << 8) | data[1];
 }
 
+// 读取校准数据
 void ms5837_read_calibration_data(uint16_t *calibration_data)
 {
     for (int i = 0; i < 6; i++)
@@ -69,6 +72,7 @@ void ms5837_read_calibration_data(uint16_t *calibration_data)
     printf("C1: %d, C2: %d, C3: %d, C4: %d, C5: %d, C6: %d\n", calibration_data[0], calibration_data[1], calibration_data[2], calibration_data[3], calibration_data[4], calibration_data[5]);
 }
 
+// 读取ADC
 uint32_t ms5837_read_adc(uint8_t cmd)
 {
     uint8_t data[3];
@@ -138,6 +142,22 @@ void ms5837_calculate(uint32_t D1, uint32_t D2, float *pressure, float *temperat
         SENS -= SENS2;
     }
 
-    *pressure = (float)(((D1 * SENS >> 21) - OFF) / 8192.0f / 100.0f); // Convert to mbar
-    *temperature = (float)TEMP / 100.0f;                               // Convert to Celsius
+    if (pressure != NULL)
+    {
+        *pressure = (float)(((D1 * SENS >> 21) - OFF) / 8192.0f / 100.0f);
+    }
+
+    if (temperature != NULL)
+    {
+        *temperature = (float)TEMP / 100.0f;
+    }
+}
+
+// ms5837获取数据
+// 不需要则传入空指针
+void ms5837_get_data(float *pressure, float *temperature)
+{
+    uint32_t D1 = ms5837_read_pressure();
+    uint32_t D2 = ms5837_read_temperature();
+    ms5837_calculate(D1, D2, pressure, temperature);
 }

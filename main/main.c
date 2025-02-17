@@ -18,6 +18,7 @@
 #include "i2c.h"
 #include "ms5837.h"
 #include "get_time.h"
+#include "uart.h"
 
 // unix时间戳
 struct timeval time_unix = {
@@ -29,24 +30,36 @@ float depth_data[1024] = {0};
 // 对应的时间
 int unix_time[1024] = {0};
 
+int report_flag = 0;
+
 void app_main()
 {
     i2c_master_init();
     ms5837_reset();
-
-    // uint16_t calibration_data[6];
-    // ms5837_read_calibration_data(calibration_data);
+    uart_init();
 
     while (1)
     {
-        uint32_t D1 = ms5837_read_pressure();
-        uint32_t D2 = ms5837_read_temperature();
-
-        float pressure, temperature;
-        ms5837_calculate(D1, D2, &pressure, &temperature);
-
-        printf("%.2f , %.2f \n", pressure, temperature);
-
-        vTaskDelay(10 / portTICK_PERIOD_MS);
+        uart_write_bytes(UART_NUM_1, "hello", 5);
+        printf("%d,%d", cmd.start, cmd.unix_time);
+        report_flag = cmd.start;
+        int index = 0;
+        while (cmd.start == 1)
+        {
+            ms5837_get_data(&depth_data[index], NULL);
+            unix_time[index] = time(NULL);
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+        }
+        if (report_flag == 1)
+        {
+            for (int i = 0; i < index; i++)
+            {
+                printf("%d,%f\n", unix_time[i], depth_data[i]);
+            }
+            report_flag = 0;
+        }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
+
+//PID定深？测定水下浮动大小

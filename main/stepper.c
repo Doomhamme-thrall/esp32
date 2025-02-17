@@ -26,7 +26,7 @@ void stepper_init()
     ledc_timer_config_t timer_conf;
     timer_conf.duty_resolution = LEDC_TIMER_10_BIT;
     timer_conf.freq_hz = 1000;
-    timer_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
+    timer_conf.speed_mode = LEDC_SPEED_MODE_MAX;
     timer_conf.timer_num = timer;
     ledc_timer_config(&timer_conf);
 
@@ -35,7 +35,7 @@ void stepper_init()
     ledc_conf.duty = 0;
     ledc_conf.gpio_num = pwm1;
     ledc_conf.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf.speed_mode = LEDC_HIGH_SPEED_MODE;
+    ledc_conf.speed_mode = LEDC_SPEED_MODE_MAX;
     ledc_conf.timer_sel = LEDC_TIMER_0;
     ledc_channel_config(&ledc_conf);
 
@@ -80,8 +80,8 @@ void stepper_set(int phrase)
 
 void pwm_set(int pwm_num, int pwm_duty)
 {
-    ledc_set_duty(LEDC_HIGH_SPEED_MODE, pwm_num, pwm_duty);
-    ledc_update_duty(LEDC_HIGH_SPEED_MODE, pwm_num);
+    ledc_set_duty(LEDC_SPEED_MODE_MAX, pwm_num, pwm_duty);
+    ledc_update_duty(LEDC_SPEED_MODE_MAX, pwm_num);
 }
 
 void stepper_forward(int step_num)
