@@ -57,9 +57,11 @@ void app_main()
                 printf("%d,%f\n", unix_time[i], depth_data[i]);
             }
             report_flag = 0;
+            //电机控制代码
+
+
+            
         }
         vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
-
-//PID定深？测定水下浮动大小
