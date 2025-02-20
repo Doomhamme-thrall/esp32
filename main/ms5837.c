@@ -154,7 +154,7 @@ void ms5837_calculate(uint32_t D1, uint32_t D2, float *pressure, float *temperat
 }
 
 // ms5837获取数据
-// 不需要则传入空指针
+// 不需要的部分传入空指针
 void ms5837_get_data(float *pressure, float *temperature)
 {
     uint32_t D1 = ms5837_read_pressure();
