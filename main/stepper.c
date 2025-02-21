@@ -84,36 +84,24 @@ void pwm_set(int pwm_num, int pwm_duty)
     ledc_update_duty(LEDC_SPEED_MODE_MAX, pwm_num);
 }
 
-void stepper_forward(int step_num)
+//steps正为正转，负为反转
+//50steps旋转一圈
+void stepper_move(int steps)
 {
-    for (int i = 0; i < (step_num) / 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            stepper_set(j);
-            vTaskDelay(pdMS_TO_TICKS(10));
+    if(steps>0){
+        for(int i=0;i<steps;i++){
+            for(int j=0;j<4;j++){
+                stepper_set(j);
+                vTaskDelay(10 / portTICK_PERIOD_MS);
+            }
         }
-    }
-    for (int i = 0; i < (step_num % 4); i++)
-    {
-        stepper_set(i);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-}
-
-void stepper_back(int step_num)
-{
-    for (int i = 0; i < (step_num) / 4; i++)
-    {
-        for (int j = 3; j >= 0; j--)
-        {
-            stepper_set(j);
-            vTaskDelay(pdMS_TO_TICKS(10));
+    }else{
+        steps=-steps;
+        for(int i=0;i<steps;i++){
+            for(int j=3;j>=0;j--){
+                stepper_set(j);
+                vTaskDelay(10 / portTICK_PERIOD_MS);
+            }
         }
-    }
-    for (int i = (step_num % 4); i >= 0; i--)
-    {
-        stepper_set(i);
-        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
