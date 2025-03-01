@@ -3,10 +3,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-#define A1 0
-#define A2 1
-#define B1 2
-#define B2 3
+#define A1 27
+#define A2 14
+#define B1 12
+#define B2 13
 
 #define pwm1 4
 #define pwm2 5
@@ -84,21 +84,28 @@ void pwm_set(int pwm_num, int pwm_duty)
     ledc_update_duty(LEDC_SPEED_MODE_MAX, pwm_num);
 }
 
-//steps正为正转，负为反转
-//50steps旋转一圈
+// steps正为正转，负为反转
+// 50steps旋转一圈
 void stepper_move(int steps)
 {
-    if(steps>0){
-        for(int i=0;i<steps;i++){
-            for(int j=0;j<4;j++){
+    if (steps > 0)
+    {
+        for (int i = 0; i < steps; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
                 stepper_set(j);
                 vTaskDelay(10 / portTICK_PERIOD_MS);
             }
         }
-    }else{
-        steps=-steps;
-        for(int i=0;i<steps;i++){
-            for(int j=3;j>=0;j--){
+    }
+    else
+    {
+        steps = -steps;
+        for (int i = 0; i < steps; i++)
+        {
+            for (int j = 3; j >= 0; j--)
+            {
                 stepper_set(j);
                 vTaskDelay(10 / portTICK_PERIOD_MS);
             }
