@@ -63,10 +63,15 @@ void app_main()
     // 初始化
     // i2c_master_init();
     // ms5837_reset();
-    // uart_init();
+    uart_init();
 
     stepper_init();
     stepper_move(100);
+    // while (1)
+    // {
+    //     stepper_move(cmd.start);
+    //     cmd.start = 0;
+    // }
     // 等待指令
     // while (cmd.start == 0)
     // {

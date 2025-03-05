@@ -5,9 +5,10 @@
 #include "freertos/queue.h"
 #include <string.h>
 #include "uart.h"
+#include "stepper.h"
 
-#define UART1_TX_PIN 39
-#define UART1_RX_PIN 40
+#define UART1_TX_PIN 34
+#define UART1_RX_PIN 35
 
 #define DATA_QUEUE_SIZE 10
 #define DATA_BUFFER_SIZE 1024

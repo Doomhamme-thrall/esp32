@@ -22,26 +22,6 @@ void stepper_init()
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
-
-    ledc_timer_config_t timer_conf;
-    timer_conf.duty_resolution = LEDC_TIMER_10_BIT;
-    timer_conf.freq_hz = 100;
-    timer_conf.speed_mode = LEDC_LOW_SPEED_MODE;
-    timer_conf.timer_num = timer;
-    ledc_timer_config(&timer_conf);
-
-    ledc_channel_config_t ledc_conf;
-    ledc_conf.channel = LEDC_CHANNEL_0;
-    ledc_conf.duty = 0;
-    ledc_conf.gpio_num = pwm1;
-    ledc_conf.intr_type = LEDC_INTR_DISABLE;
-    ledc_conf.speed_mode = LEDC_LOW_SPEED_MODE;
-    ledc_conf.timer_sel = LEDC_TIMER_0;
-    ledc_channel_config(&ledc_conf);
-
-    ledc_conf.channel = LEDC_CHANNEL_1;
-    ledc_conf.gpio_num = pwm2;
-    ledc_channel_config(&ledc_conf);
 }
 
 void stepper_set(int phrase)
@@ -78,37 +58,24 @@ void stepper_set(int phrase)
     }
 }
 
-void pwm_set(int pwm_num, int pwm_duty)
-{
-    ledc_set_duty(LEDC_SPEED_MODE_MAX, pwm_num, pwm_duty);
-    ledc_update_duty(LEDC_SPEED_MODE_MAX, pwm_num);
-}
-
 // steps正为正转，负为反转
-// 50steps旋转一圈
+// 1steps=1.8deg
 void stepper_move(int steps)
 {
     if (steps > 0)
     {
         for (int i = 0; i < steps; i++)
         {
-            for (int j = 0; j < 4; j++)
-            {
-                stepper_set(j);
-                vTaskDelay(10 / portTICK_PERIOD_MS);
-            }
+            stepper_set(i % 4);
+            vTaskDelay(pdMS_TO_TICKS(1));
         }
     }
     else
     {
-        steps = -steps;
-        for (int i = 0; i < steps; i++)
+        for (int i = 0; i < -steps; i++)
         {
-            for (int j = 3; j >= 0; j--)
-            {
-                stepper_set(j);
-                vTaskDelay(10 / portTICK_PERIOD_MS);
-            }
+            stepper_set((3 - (i % 4)));
+            vTaskDelay(pdMS_TO_TICKS(1));
         }
     }
 }
