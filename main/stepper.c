@@ -9,7 +9,7 @@
 #define B2 13
 
 #define pwm1 4
-#define pwm2 5
+#define pwm2 8
 
 #define timer 0
 
@@ -67,7 +67,7 @@ void stepper_move(int steps)
         for (int i = 0; i < steps; i++)
         {
             stepper_set(i % 4);
-            vTaskDelay(pdMS_TO_TICKS(1));
+            vTaskDelay(pdMS_TO_TICKS(8));
         }
     }
     else
@@ -75,7 +75,7 @@ void stepper_move(int steps)
         for (int i = 0; i < -steps; i++)
         {
             stepper_set((3 - (i % 4)));
-            vTaskDelay(pdMS_TO_TICKS(1));
+            vTaskDelay(pdMS_TO_TICKS(8));
         }
     }
 }
