@@ -1,16 +1,16 @@
 #include "driver/i2c.h"
 
-#define I2C_MASTER_SCL_IO 22        // GPIO number for I2C master clock
-#define I2C_MASTER_SDA_IO 21        // GPIO number for I2C master data
-#define I2C_MASTER_NUM I2C_NUM_0    // I2C port number for master dev
-#define I2C_MASTER_FREQ_HZ 400000   // I2C master clock frequency
-#define I2C_MASTER_TX_BUF_DISABLE 0 
-#define I2C_MASTER_RX_BUF_DISABLE 0 
+#define I2C_MASTER_SCL_IO 22      // GPIO number for I2C master clock
+#define I2C_MASTER_SDA_IO 21      // GPIO number for I2C master data
+#define I2C_MASTER_NUM I2C_NUM_0  // I2C port number for master dev
+#define I2C_MASTER_FREQ_HZ 400000 // I2C master clock frequency
+#define I2C_MASTER_TX_BUF_DISABLE 0
+#define I2C_MASTER_RX_BUF_DISABLE 0
 
 #define MS5837_ADDR 0x76 // MS5837 I2C address
 
 // 出厂校准数据
-static int calibration_data[6] = {27919, 27937, 16806, 18058, 28925, 26652};
+static int calibration_data[6] = {28907, 27621, 17410, 17802, 27742, 26681};
 
 void i2c_master_init()
 {

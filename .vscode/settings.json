@@ -13,5 +13,15 @@
   },
   "idf.customExtraVars": {
     "IDF_TARGET": "esp32"
+  },
+
+  "terminal.integrated.profiles.windows": {
+    "IDF Terminal": {
+      "path": "C:\\Windows\\system32\\cmd.exe",
+      "args": [
+        "/k",
+        "C:\\Espressif\\idf_cmd_init.bat esp-idf-c4f9b3ceff783020e5854e1cd128a5cf"
+      ]
+    }
   }
 }

@@ -7,8 +7,8 @@
 #include "uart.h"
 #include "stepper.h"
 
-#define UART1_TX_PIN 34
-#define UART1_RX_PIN 35
+#define UART1_TX_PIN 16
+#define UART1_RX_PIN 17
 
 #define DATA_QUEUE_SIZE 10
 #define DATA_BUFFER_SIZE 1024
@@ -115,7 +115,7 @@ void uart_init()
     uart_set_pin(uart_num, UART1_TX_PIN, UART1_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     uart_driver_install(uart_num, 2048, 2048, 20, &uart1_queue, 0);
 
-    uart_enable_pattern_det_baud_intr(UART_NUM_1, '+', 3, 9, 0, 0);
+    uart_enable_pattern_det_baud_intr(uart_num, '+', 3, 9, 0, 0);
     uart_pattern_queue_reset(UART_NUM_1, 20);
 
     // 创建处理 UART 事件的任务

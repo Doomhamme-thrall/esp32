@@ -2,6 +2,11 @@
 #include "driver/ledc.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_system.h"
+#include "esp_rom_sys.h"
+#include "esp_task.h"
+#include "esp_task_wdt.h"
+#include "main.c"
 
 #define A1 27
 #define A2 14
@@ -67,7 +72,8 @@ void stepper_move(int steps)
         for (int i = 0; i < steps; i++)
         {
             stepper_set(i % 4);
-            vTaskDelay(pdMS_TO_TICKS(8));
+            esp_rom_delay_us(5000);
+            // esp_task_wdt_reset();
         }
     }
     else
@@ -75,7 +81,7 @@ void stepper_move(int steps)
         for (int i = 0; i < -steps; i++)
         {
             stepper_set((3 - (i % 4)));
-            vTaskDelay(pdMS_TO_TICKS(8));
+            esp_rom_delay_us(5000);
         }
     }
 }
