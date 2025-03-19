@@ -25,11 +25,6 @@
 #define target 200      // 目标深度
 #define data_size 10240 // 数据大小
 
-// unix时间戳
-struct timeval time_unix = {
-    .tv_sec = 0,
-    .tv_usec = 0};
-
 float depth_data[data_size] = {0}; // 深度数据
 int unix_time[data_size] = {0};    // 对应的时间
 int reached_time = 0;              // 到达目标深度的时间
@@ -67,11 +62,7 @@ void app_main()
         switch (state)
         {
         case init:
-            struct timeval tv;
-            tv.tv_sec = cmd.unix_time;
-            tv.tv_usec = 0;
-            settimeofday(&tv, NULL); // 初始化时间
-
+            time_sync(cmd.unix_time);
             state = dowm;
             break;
 

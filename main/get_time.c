@@ -3,11 +3,6 @@
 #include "uart.h"
 #include "driver/uart.h"
 
-void get_time()
-{
-    // *time_unix = time(NULL);
-}
-
 void print_time(int time_unix)
 {
     time_t now = time_unix;
@@ -22,6 +17,11 @@ void print_time(int time_unix)
     printf("Current date and time: %s\n", buffer);
 }
 
-void time_sync(int *time_unix)
+// 初始化时间
+void time_sync(int time_unix)
 {
+    struct timeval tv;
+    tv.tv_sec = time_unix;
+    tv.tv_usec = 0;
+    settimeofday(&tv, NULL);
 }

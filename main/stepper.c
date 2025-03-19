@@ -6,7 +6,6 @@
 #include "esp_rom_sys.h"
 #include "esp_task.h"
 #include "esp_task_wdt.h"
-#include "main.c"
 
 #define A1 27
 #define A2 14
