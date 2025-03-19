@@ -22,19 +22,17 @@
 #include "uart.h"
 #include "stepper.h"
 
-// 目标深度
-#define target 1
+#define target 200      // 目标深度
+#define data_size 10240 // 数据大小
 
 // unix时间戳
 struct timeval time_unix = {
-    .tv_sec = 1739685416,
+    .tv_sec = 0,
     .tv_usec = 0};
 
-// 深度数据
-float depth_data[1024] = {0};
-// 对应的时间
-int unix_time[1024] = {0};
-int reached_time = 0;
+float depth_data[data_size] = {0}; // 深度数据
+int unix_time[data_size] = {0};    // 对应的时间
+int reached_time = 0;              // 到达目标深度的时间
 
 int index = 0;
 
@@ -49,18 +47,6 @@ typedef enum
     wait
 } State;
 
-void depth_control(float target_depth, float current_depth)
-{
-    if (target_depth > current_depth)
-    {
-        stepper_move(-10); // 待定
-    }
-    else if (target_depth < current_depth)
-    {
-        stepper_move(10);
-    }
-}
-
 void app_main()
 {
     // 初始化
@@ -71,8 +57,10 @@ void app_main()
 
     // 等待开始指令
     printf("started\n");
+    uart_write_bytes(UART_NUM_1, "started", 7);
 
     State state = wait;
+
     while (1)
     {
 
@@ -87,6 +75,7 @@ void app_main()
             state = dowm;
             break;
 
+        // 下潜
         case dowm:
             ms5837_get_data(&depth_data[index], NULL);
             unix_time[index] = time(NULL);
@@ -104,6 +93,7 @@ void app_main()
             index++;
             break;
 
+        // 定深
         case keep:
             ms5837_get_data(&depth_data[index], NULL);
             unix_time[index] = time(NULL);
@@ -119,10 +109,12 @@ void app_main()
             }
             if (time(NULL) - reached_time > 30)
             {
+                reached_time = 0;
                 state = up;
             }
             break;
 
+        // 上浮
         case up:
             ms5837_get_data(&depth_data[index], NULL);
             unix_time[index] = time(NULL);
@@ -137,6 +129,7 @@ void app_main()
                 stepper_move(100);
             }
             break;
+
         case report:
             for (int i = 0; i < index; i++)
             {
@@ -145,12 +138,14 @@ void app_main()
             }
             state = wait;
             break;
+        // 待机
         case wait:
             cmd.start = 0;
             if (cmd.start == 1)
             {
                 state = init;
-                printf("started\n");
+                printf("started2\n");
+                uart_write_bytes(UART_NUM_1, "started2", 8);
             }
             break;
         }
