@@ -17,12 +17,13 @@ static const char *TAG = "uart_events";
 static QueueHandle_t uart1_queue;
 static QueueHandle_t data_queue;
 
+TaskHandle_t uart_task_handle = NULL;
+
 commands cmd = {
     .unix_time = 0,
     .start = 0};
 
-static void
-uart_event_task(void *pvParameters)
+void uart_event_task(void *pvParameters)
 {
     uart_event_t event;
     uint8_t *dtmp = (uint8_t *)malloc(DATA_BUFFER_SIZE);
@@ -119,7 +120,7 @@ void uart_init()
     uart_pattern_queue_reset(UART_NUM_1, 20);
 
     // 创建处理 UART 事件的任务
-    xTaskCreate(uart_event_task, "uart_event_task", 3072, NULL, 12, NULL);
+    xTaskCreate(uart_event_task, "uart_event_task", 3072, NULL, 12, &uart_task_handle);
 
     ESP_LOGI("uart", "uart1 initialized");
 }

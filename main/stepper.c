@@ -6,6 +6,7 @@
 #include "esp_rom_sys.h"
 #include "esp_task.h"
 #include "esp_task_wdt.h"
+#include "uart.h"
 
 #define A1 27
 #define A2 14
@@ -16,6 +17,8 @@
 #define pwm2 8
 
 #define timer 0
+
+extern TaskHandle_t uart_task_handle;
 
 void stepper_init()
 {
@@ -71,8 +74,8 @@ void stepper_move(int steps)
         for (int i = 0; i < steps; i++)
         {
             stepper_set(i % 4);
-            esp_rom_delay_us(5000);
-            // esp_task_wdt_reset();
+            esp_rom_delay_us(10000);
+            // vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
     else
@@ -80,7 +83,8 @@ void stepper_move(int steps)
         for (int i = 0; i < -steps; i++)
         {
             stepper_set((3 - (i % 4)));
-            esp_rom_delay_us(5000);
+            esp_rom_delay_us(10000);
+            // vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
 }

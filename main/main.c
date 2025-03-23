@@ -22,13 +22,14 @@
 #include "uart.h"
 #include "stepper.h"
 
-#define target 200      // 目标深度
-#define data_size 10240 // 数据大小
+#define target 200       // 目标深度
+#define data_size 10240  // 数据大小
+#define stepper_max 4500 // 丝杆极限
 
 float depth_data[data_size] = {0}; // 深度数据
 int unix_time[data_size] = {0};    // 对应的时间
 int reached_time = 0;              // 到达目标深度的时间
-
+extern TaskHandle_t uart_task_handle;
 int index = 0;
 
 // 状态机
@@ -49,18 +50,19 @@ void app_main()
     uart_init();
     stepper_init();
     printf("all ready\n");
-
+    uart_write_bytes(UART_NUM_1, "all ready", 9);
+    stepper_move(100);
+    stepper_move(-100);
     while (1)
     {
-        printf("%d %d\n", cmd.unix_time, cmd.start);
+        printf("%d %d\n", cmd.start, cmd.unix_time);
         if (cmd.start)
         {
             stepper_move(cmd.unix_time);
             cmd.unix_time = 0;
             cmd.start = 0;
         }
-
-        vTaskDelay(pdMS_TO_TICKS(500));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
