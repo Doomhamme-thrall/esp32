@@ -51,11 +51,18 @@ void app_main()
     stepper_init();
     printf("all ready\n");
     uart_write_bytes(UART_NUM_1, "all ready", 9);
+    
     stepper_move(100);
     stepper_move(-100);
     while (1)
     {
         printf("%d %d\n", cmd.start, cmd.unix_time);
+        ms5837_get_data(&depth_data[index], NULL);
+        unix_time[index] = time(NULL);
+        printf("time: %d  ", unix_time[index]);
+        printf("depth: %f\n", depth_data[index]);
+        index++;
+
         if (cmd.start)
         {
             stepper_move(cmd.unix_time);

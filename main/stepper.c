@@ -18,6 +18,8 @@
 
 #define timer 0
 
+#define max_lenth 4500
+
 extern TaskHandle_t uart_task_handle;
 
 void stepper_init()
@@ -87,4 +89,19 @@ void stepper_move(int steps)
             // vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
+}
+
+void stepper_position(int target_position, int *current_position)
+{
+    if (target_position > max_lenth)
+    {
+        target_position = max_lenth;
+    }
+    if (target_position < 0)
+    {
+        target_position = 0;
+    }
+    int steps = target_position - (*current_position);
+    stepper_move(steps);
+    *current_position = target_position;
 }
