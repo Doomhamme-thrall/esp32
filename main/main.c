@@ -31,6 +31,7 @@ int unix_time[data_size] = {0};    // 对应的时间
 int reached_time = 0;              // 到达目标深度的时间
 extern TaskHandle_t uart_task_handle;
 int index = 0;
+int steps_moved = 0;
 
 // 状态机
 typedef enum
@@ -43,134 +44,123 @@ typedef enum
     wait
 } State;
 
-void app_main()
-{
-    i2c_master_init();
-    ms5837_reset();
-    uart_init();
-    stepper_init();
-    printf("all ready\n");
-    uart_write_bytes(UART_NUM_1, "all ready", 9);
-    
-    stepper_move(100);
-    stepper_move(-100);
-    while (1)
-    {
-        printf("%d %d\n", cmd.start, cmd.unix_time);
-        ms5837_get_data(&depth_data[index], NULL);
-        unix_time[index] = time(NULL);
-        printf("time: %d  ", unix_time[index]);
-        printf("depth: %f\n", depth_data[index]);
-        index++;
-
-        if (cmd.start)
-        {
-            stepper_move(cmd.unix_time);
-            cmd.unix_time = 0;
-            cmd.start = 0;
-        }
-        vTaskDelay(pdMS_TO_TICKS(1000));
-    }
-}
-
 // void app_main()
 // {
-//     // 初始化
 //     i2c_master_init();
 //     ms5837_reset();
 //     uart_init();
 //     stepper_init();
+//     printf("all ready\n");
+//     uart_write_bytes(UART_NUM_1, "all ready", 9);
 
-//     // 等待开始指令
-//     printf("started\n");
-//     uart_write_bytes(UART_NUM_1, "started", 7);
-
-//     State state = wait;
-
+//     stepper_move(100);
+//     stepper_move(-100);
 //     while (1)
 //     {
-
-//         switch (state)
+//         if (cmd.start)
 //         {
-//         case init:
-//             time_sync(cmd.unix_time);
-//             state = dowm;
-//             break;
-
-//         // 下潜
-//         case dowm:
-//             ms5837_get_data(&depth_data[index], NULL);
-//             unix_time[index] = time(NULL);
-//             printf("depth: %f\n", depth_data[index]);
-//             printf("time: %d\n", unix_time[index]);
-//             if (depth_data[index] < target)
-//             {
-//                 stepper_move(-100);
-//             }
-//             else
-//             {
-//                 reached_time = time(NULL);
-//                 state = keep;
-//             }
-//             index++;
-//             break;
-
-//         // 定深
-//         case keep:
-//             ms5837_get_data(&depth_data[index], NULL);
-//             unix_time[index] = time(NULL);
-//             printf("depth: %f\n", depth_data[index]);
-//             printf("time: %d\n", unix_time[index]);
-//             if (depth_data[index] < target)
-//             {
-//                 stepper_move(-10);
-//             }
-//             else
-//             {
-//                 stepper_move(10);
-//             }
-//             if (time(NULL) - reached_time > 30)
-//             {
-//                 reached_time = 0;
-//                 state = up;
-//             }
-//             break;
-
-//         // 上浮
-//         case up:
-//             ms5837_get_data(&depth_data[index], NULL);
-//             unix_time[index] = time(NULL);
-//             printf("depth: %f\n", depth_data[index]);
-//             printf("time: %d\n", unix_time[index]);
-//             if (depth_data[index] >= 0.1)
-//             {
-//                 state = report;
-//             }
-//             else
-//             {
-//                 stepper_move(100);
-//             }
-//             break;
-
-//         case report:
-//             for (int i = 0; i < index; i++)
-//             {
-//                 uart_write_bytes(UART_NUM_1, &unix_time[i], sizeof(int));
-//                 uart_write_bytes(UART_NUM_1, &depth_data[i], sizeof(float));
-//             }
-//             state = wait;
-//             break;
-//         // 待机
-//         case wait:
+//             stepper_move(cmd.unix_time);
+//             cmd.unix_time = 0;
 //             cmd.start = 0;
-//             if (cmd.start == 1)
-//             {
-//                 state = init;
-//                 printf("started2\n");
-//                 uart_write_bytes(UART_NUM_1, "started2", 8);
-//             }
-//             break;
 //         }
-//         vTaskDelay(pdMS_TO_TICKS(500));
+//         vTaskDelay(pdMS_TO_TICKS(1000));
 //     }
 // }
+
+void app_main()
+{
+    // 初始化
+    i2c_master_init();
+    ms5837_reset();
+    uart_init();
+    stepper_init();
+
+    // 等待开始指令
+    printf("all ready\n");
+    uart_write_bytes(UART_NUM_1, "all ready", 9);
+
+    State state = wait;
+
+    while (1)
+    {
+        switch (state)
+        {
+        case init:
+            time_sync(cmd.unix_time);
+            state = dowm;
+            break;
+
+        // 下潜
+        case dowm:
+            ms5837_get_data(&depth_data[index], NULL);
+            unix_time[index] = time(NULL);
+            printf("depth: %f\n", depth_data[index]);
+            printf("time: %d\n", unix_time[index]);
+            if (depth_data[index] < target)
+            {
+                stepper_move(-500);
+                steps_moved -= 500;
+            }
+            else
+            {
+                reached_time = time(NULL);
+                state = keep;
+            }
+            index++;
+            break;
+
+        // 定深
+        case keep:
+            ms5837_get_data(&depth_data[index], NULL);
+            unix_time[index] = time(NULL);
+            printf("depth: %f\n", depth_data[index]);
+            printf("time: %d\n", unix_time[index]);
+            if (depth_data[index] < target)
+            {
+                stepper_move(-100);
+                steps_moved -= 100;
+            }
+            else
+            {
+                stepper_move(100);
+                steps_moved += 100;
+            }
+            if (time(NULL) - reached_time > 30)
+            {
+                reached_time = 0;
+                state = up;
+            }
+            break;
+
+        // 上浮
+        case up:
+            ms5837_get_data(&depth_data[index], NULL);
+            unix_time[index] = time(NULL);
+            printf("depth: %f\n", depth_data[index]);
+            printf("time: %d\n", unix_time[index]);
+            stepper_move(-steps_moved);
+            state = report;
+            break;
+        // 回传
+        case report:
+            for (int i = 0; i < index; i++)
+            {
+                uart_write_bytes(UART_NUM_1, &unix_time[i], sizeof(int));
+                uart_write_bytes(UART_NUM_1, &depth_data[i], sizeof(float));
+            }
+            cmd.start = 0;
+            state = wait;
+            break;
+        // 待机
+        case wait:
+            if (cmd.start == 1)
+            {
+                state = dowm;
+                printf("all ready2\n");
+                uart_write_bytes(UART_NUM_1, "all ready2", 8);
+            }
+            break;
+        }
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+}

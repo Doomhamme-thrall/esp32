@@ -76,7 +76,7 @@ void stepper_move(int steps)
         for (int i = 0; i < steps; i++)
         {
             stepper_set(i % 4);
-            esp_rom_delay_us(10000);
+            esp_rom_delay_us(5000);
             // vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
@@ -85,7 +85,7 @@ void stepper_move(int steps)
         for (int i = 0; i < -steps; i++)
         {
             stepper_set((3 - (i % 4)));
-            esp_rom_delay_us(10000);
+            esp_rom_delay_us(5000);
             // vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
