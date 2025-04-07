@@ -10,7 +10,7 @@
 #define MS5837_ADDR 0x76 // MS5837 I2C address
 
 // 出厂校准数据
-static int calibration_data[6] = {28907, 27621, 17410, 17802, 27742, 26681};
+static int calibration_data[6] = {30352, 28068, 18223, 18103, 27068, 26543};
 
 void i2c_master_init()
 {

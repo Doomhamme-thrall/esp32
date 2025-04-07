@@ -14,6 +14,8 @@
 #include "driver/i2c.h"
 #include "esp_task_wdt.h"
 #include "esp_task.h"
+#include <string.h>
+#include "esp_timer.h"
 
 #include "pwm.h"
 #include "i2c.h"
@@ -22,16 +24,17 @@
 #include "uart.h"
 #include "stepper.h"
 
-#define target 200       // 目标深度
+#define target 5         // 目标深度
 #define data_size 10240  // 数据大小
-#define stepper_max 4500 // 丝杆极限
+#define stepper_max 1000 // 丝杆极限
 
 float depth_data[data_size] = {0}; // 深度数据
-int unix_time[data_size] = {0};    // 对应的时间
+float unix_time[data_size] = {0};  // 对应的时间
 int reached_time = 0;              // 到达目标深度的时间
 extern TaskHandle_t uart_task_handle;
-int index = 0;
+int data_index = 0;
 int steps_moved = 0;
+float atmosphere = 0; // 大气压
 
 // 状态机
 typedef enum
@@ -44,30 +47,7 @@ typedef enum
     wait
 } State;
 
-// void app_main()
-// {
-//     i2c_master_init();
-//     ms5837_reset();
-//     uart_init();
-//     stepper_init();
-//     printf("all ready\n");
-//     uart_write_bytes(UART_NUM_1, "all ready", 9);
-
-//     stepper_move(100);
-//     stepper_move(-100);
-//     while (1)
-//     {
-//         if (cmd.start)
-//         {
-//             stepper_move(cmd.unix_time);
-//             cmd.unix_time = 0;
-//             cmd.start = 0;
-//         }
-//         vTaskDelay(pdMS_TO_TICKS(1000));
-//     }
-// }
-
-void app_main()
+void user_init()
 {
     // 初始化
     i2c_master_init();
@@ -76,8 +56,18 @@ void app_main()
     stepper_init();
 
     // 等待开始指令
+
     printf("all ready\n");
     uart_write_bytes(UART_NUM_1, "all ready", 9);
+    stepper_move(100);
+    stepper_move(-100);
+}
+
+void user_code()
+{
+
+    ms5837_get_data(&atmosphere, NULL); // 校准大气压
+    printf("atmosphere: %f\n", atmosphere);
 
     State state = wait;
 
@@ -92,61 +82,92 @@ void app_main()
 
         // 下潜
         case dowm:
-            ms5837_get_data(&depth_data[index], NULL);
-            unix_time[index] = time(NULL);
-            printf("depth: %f\n", depth_data[index]);
-            printf("time: %d\n", unix_time[index]);
-            if (depth_data[index] < target)
+            ms5837_get_data(&depth_data[data_index], NULL);
+            unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+            printf("depth: %f\n", depth_data[data_index]);
+            printf("time: %f\n", unix_time[data_index]);
+            if (steps_moved == 0)
             {
-                stepper_move(-500);
-                steps_moved -= 500;
+                stepper_move(-300);
+                steps_moved -= 300;
             }
-            else
+            if (depth_data[data_index] - atmosphere < target)
             {
-                reached_time = time(NULL);
+                reached_time = esp_timer_get_time() / 1000000.0;
+                printf("down finished");
+                printf("index: %d\n", data_index);
                 state = keep;
             }
-            index++;
+            data_index++;
             break;
 
         // 定深
         case keep:
-            ms5837_get_data(&depth_data[index], NULL);
-            unix_time[index] = time(NULL);
-            printf("depth: %f\n", depth_data[index]);
-            printf("time: %d\n", unix_time[index]);
-            if (depth_data[index] < target)
+            data_index++;
+            ms5837_get_data(&depth_data[data_index], NULL);
+            unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+            printf("depth: %f\n", depth_data[data_index]);
+            printf("time: %f\n", unix_time[data_index]);
+            if (depth_data[data_index] - atmosphere < target + 2)
             {
-                stepper_move(-100);
-                steps_moved -= 100;
+                if (steps_moved <= -300)
+                {
+                    printf("%d", steps_moved);
+                }
+                else
+                {
+                    stepper_move(-50);
+                    steps_moved += -50;
+                }
             }
-            else
+            else if (depth_data[data_index] - atmosphere > target - 2)
             {
-                stepper_move(100);
-                steps_moved += 100;
+                if (steps_moved >= 300)
+                {
+                    printf("%d", steps_moved);
+                }
+                else
+                {
+                    stepper_move(50);
+                    steps_moved += 50;
+                }
             }
-            if (time(NULL) - reached_time > 30)
+            // 定深时间
+            if (esp_timer_get_time() / 1000000.0 - reached_time > 30)
             {
                 reached_time = 0;
+                printf("keep,finished");
+                printf("index: %d\n", data_index);
                 state = up;
             }
             break;
 
         // 上浮
         case up:
-            ms5837_get_data(&depth_data[index], NULL);
-            unix_time[index] = time(NULL);
-            printf("depth: %f\n", depth_data[index]);
-            printf("time: %d\n", unix_time[index]);
-            stepper_move(-steps_moved);
             state = report;
+            printf("now,up");
+            ms5837_get_data(&depth_data[data_index], NULL);
+            unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+            printf("depth: %f\n", depth_data[data_index]);
+            printf("time: %f\n", unix_time[data_index]);
+            stepper_move(-steps_moved); // 将数据记录放进循环里去
+            printf("up,finished");
+
             break;
         // 回传
         case report:
-            for (int i = 0; i < index; i++)
+            for (int i = 0; i < data_index; i++)
             {
-                uart_write_bytes(UART_NUM_1, &unix_time[i], sizeof(int));
-                uart_write_bytes(UART_NUM_1, &depth_data[i], sizeof(float));
+                printf("Depth: %.2f\n", depth_data[i]);
+                printf("time: %f\n", unix_time[i]);
+            }
+
+            for (int i = 0; i < data_index; i++)
+            {
+                char depth_str[32];
+                snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f\n", unix_time[i], depth_data[i]);
+                uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
+                vTaskDelay(pdMS_TO_TICKS(50));
             }
             cmd.start = 0;
             state = wait;
@@ -163,4 +184,10 @@ void app_main()
         }
         vTaskDelay(pdMS_TO_TICKS(100));
     }
+}
+
+void app_main()
+{
+    user_init();
+    user_code();
 }
