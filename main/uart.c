@@ -21,7 +21,9 @@ TaskHandle_t uart_task_handle = NULL;
 
 commands cmd = {
     .unix_time = 0,
-    .start = 0};
+    .start = 0,
+    .steps = 0,
+};
 
 void uart_event_task(void *pvParameters)
 {
@@ -48,6 +50,11 @@ void uart_event_task(void *pvParameters)
                     if (token != NULL)
                     {
                         cmd.start = (int8_t)atoi(token);
+                        token = strtok(NULL, ",");
+                        if (token != NULL)
+                        {
+                            cmd.steps = atoi(token);
+                        }
                     }
                 }
                 printf("data processed");

@@ -108,6 +108,7 @@ void user_code()
             unix_time[data_index] = esp_timer_get_time() / 1000000.0;
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
+            vTaskDelay(pdMS_TO_TICKS(100));
             if (depth_data[data_index] - atmosphere < target + 2)
             {
                 if (steps_moved <= -300)
@@ -167,7 +168,7 @@ void user_code()
                 char depth_str[32];
                 snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f\n", unix_time[i], depth_data[i]);
                 uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
-                vTaskDelay(pdMS_TO_TICKS(50));
+                vTaskDelay(pdMS_TO_TICKS(100));
             }
             cmd.start = 0;
             state = wait;
@@ -180,6 +181,8 @@ void user_code()
                 printf("all ready2\n");
                 uart_write_bytes(UART_NUM_1, "all ready2", 8);
             }
+            stepper_move(cmd.steps);
+            cmd.steps = 0;
             break;
         }
         vTaskDelay(pdMS_TO_TICKS(100));

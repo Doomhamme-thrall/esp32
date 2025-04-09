@@ -4,6 +4,7 @@ typedef struct
 {
     int unix_time;
     int start;
+    int steps;
 } commands;
 extern commands cmd;
 
