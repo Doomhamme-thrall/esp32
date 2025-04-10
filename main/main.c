@@ -24,7 +24,7 @@
 #include "uart.h"
 #include "stepper.h"
 
-#define target 5         // 目标深度
+#define target 8         // 目标深度
 #define data_size 10240  // 数据大小
 #define stepper_max 1000 // 丝杆极限
 
@@ -68,6 +68,9 @@ void user_code()
 
     ms5837_get_data(&atmosphere, NULL); // 校准大气压
     printf("atmosphere: %f\n", atmosphere);
+    char depth_str[32];
+    snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f\n", unix_time[0], atmosphere);
+    uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
 
     State state = wait;
 
@@ -88,8 +91,8 @@ void user_code()
             printf("time: %f\n", unix_time[data_index]);
             if (steps_moved == 0)
             {
-                stepper_move(-300);
-                steps_moved -= 300;
+                stepper_move(-500);
+                // steps_moved -= 300;
             }
             if (depth_data[data_index] - atmosphere < target)
             {
@@ -111,7 +114,7 @@ void user_code()
             vTaskDelay(pdMS_TO_TICKS(100));
             if (depth_data[data_index] - atmosphere < target + 2)
             {
-                if (steps_moved <= -300)
+                if (steps_moved <= -9999)
                 {
                     printf("%d", steps_moved);
                 }
@@ -123,7 +126,7 @@ void user_code()
             }
             else if (depth_data[data_index] - atmosphere > target - 2)
             {
-                if (steps_moved >= 300)
+                if (steps_moved >= 9999)
                 {
                     printf("%d", steps_moved);
                 }
@@ -151,7 +154,8 @@ void user_code()
             unix_time[data_index] = esp_timer_get_time() / 1000000.0;
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
-            stepper_move(-steps_moved); // 将数据记录放进循环里去
+
+            stepper_move(-(steps_moved - 500 - 100)); // 将数据记录放进循环里去
             printf("up,finished");
 
             break;
