@@ -99,11 +99,10 @@ void user_code()
 
         // 定深
         case keep:
-            if (depth_data[data_index] - atmosphere < target & reached_time == 0)
+            if (depth_data[data_index] - atmosphere < target && reached_time == 0)
             {
                 reached_time = esp_timer_get_time() / 1000000.0;
-                printf("down finished");
-                printf("index: %d\n", data_index);
+                printf("down finished\n");
                 // state = keep;
             }
             ms5837_get_data(&depth_data[data_index], NULL);
@@ -114,7 +113,7 @@ void user_code()
             {
                 if (steps_moved <= -200)
                 {
-                    printf("%d", steps_moved);
+                    printf("%d\n", steps_moved);
                 }
                 else
                 {
@@ -124,9 +123,9 @@ void user_code()
             }
             else if (depth_data[data_index] - atmosphere > target - 1)
             {
-                if (steps_moved >= 200)
+                if (steps_moved >= 400)
                 {
-                    printf("%d", steps_moved);
+                    printf("%d\n", steps_moved);
                 }
                 else
                 {
@@ -138,8 +137,7 @@ void user_code()
             if (unix_time[data_index] - reached_time > 30)
             {
                 reached_time = 0;
-                printf("keep,finished");
-                printf("index: %d\n", data_index);
+                printf("keep,finished\n");
                 state = up;
             }
             data_index++;
@@ -154,10 +152,15 @@ void user_code()
             unix_time[data_index] = esp_timer_get_time() / 1000000.0;
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
-
-            stepper_move(-(steps_moved)); // 将数据记录放进循环里去
+            while (steps_moved < 0)
+            {
+                ms5837_get_data(&depth_data[data_index], NULL);
+                unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+                stepper_move(50);
+                steps_moved += 50;
+                data_index++;
+            }
             printf("up,finished");
-
             break;
         // 回传
         case report:
@@ -174,6 +177,7 @@ void user_code()
                 uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
                 vTaskDelay(pdMS_TO_TICKS(100));
             }
+            data_index = 0;
             cmd.start = 0;
             state = wait;
             break;
@@ -181,15 +185,15 @@ void user_code()
         case wait:
             if (cmd.start == 1)
             {
-                state = dowm;
-                printf("all ready2\n");
-                uart_write_bytes(UART_NUM_1, "all ready2", 8);
+                state = keep;
+                printf("start working\n");
+                uart_write_bytes(UART_NUM_1, "start working", 13);
             }
             stepper_move(cmd.steps);
             cmd.steps = 0;
             break;
         }
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
 
