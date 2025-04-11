@@ -80,7 +80,7 @@ void user_code()
         {
         case init:
             time_sync(cmd.unix_time);
-            state = dowm;
+            state = keep;
             break;
 
         // 下潜
@@ -91,30 +91,28 @@ void user_code()
             printf("time: %f\n", unix_time[data_index]);
             if (steps_moved == 0)
             {
-                stepper_move(-500);
-                // steps_moved -= 300;
-            }
-            if (depth_data[data_index] - atmosphere < target)
-            {
-                reached_time = esp_timer_get_time() / 1000000.0;
-                printf("down finished");
-                printf("index: %d\n", data_index);
-                state = keep;
+                stepper_move(-200);
+                steps_moved -= 200;
             }
             data_index++;
             break;
 
         // 定深
         case keep:
-            data_index++;
+            if (depth_data[data_index] - atmosphere < target & reached_time == 0)
+            {
+                reached_time = esp_timer_get_time() / 1000000.0;
+                printf("down finished");
+                printf("index: %d\n", data_index);
+                // state = keep;
+            }
             ms5837_get_data(&depth_data[data_index], NULL);
             unix_time[data_index] = esp_timer_get_time() / 1000000.0;
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
-            vTaskDelay(pdMS_TO_TICKS(100));
-            if (depth_data[data_index] - atmosphere < target + 2)
+            if (depth_data[data_index] - atmosphere < target + 1)
             {
-                if (steps_moved <= -9999)
+                if (steps_moved <= -200)
                 {
                     printf("%d", steps_moved);
                 }
@@ -124,9 +122,9 @@ void user_code()
                     steps_moved += -50;
                 }
             }
-            else if (depth_data[data_index] - atmosphere > target - 2)
+            else if (depth_data[data_index] - atmosphere > target - 1)
             {
-                if (steps_moved >= 9999)
+                if (steps_moved >= 200)
                 {
                     printf("%d", steps_moved);
                 }
@@ -137,13 +135,15 @@ void user_code()
                 }
             }
             // 定深时间
-            if (esp_timer_get_time() / 1000000.0 - reached_time > 30)
+            if (unix_time[data_index] - reached_time > 30)
             {
                 reached_time = 0;
                 printf("keep,finished");
                 printf("index: %d\n", data_index);
                 state = up;
             }
+            data_index++;
+            vTaskDelay(pdMS_TO_TICKS(100));
             break;
 
         // 上浮
@@ -155,7 +155,7 @@ void user_code()
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
 
-            stepper_move(-(steps_moved - 500 - 100)); // 将数据记录放进循环里去
+            stepper_move(-(steps_moved)); // 将数据记录放进循环里去
             printf("up,finished");
 
             break;
