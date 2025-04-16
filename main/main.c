@@ -24,12 +24,12 @@
 #include "uart.h"
 #include "stepper.h"
 
-#define target 8         // 目标深度
+#define target 2         // 目标深度
 #define data_size 10240  // 数据大小
 #define stepper_max 1000 // 丝杆极限
 
 float depth_data[data_size] = {0}; // 深度数据
-float unix_time[data_size] = {0};  // 对应的时间
+double unix_time[data_size] = {0}; // 对应的时间
 int reached_time = 0;              // 到达目标深度的时间
 extern TaskHandle_t uart_task_handle;
 int data_index = 0;
@@ -61,11 +61,16 @@ void user_init()
     uart_write_bytes(UART_NUM_1, "all ready", 9);
     stepper_move(100);
     stepper_move(-100);
+
+    while (cmd.unix_time == 0)
+    {
+        vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    time_sync(cmd.unix_time); // 同步时间
 }
 
 void user_code()
 {
-
     ms5837_get_data(&atmosphere, NULL); // 校准大气压
     printf("atmosphere: %f\n", atmosphere);
     char depth_str[32];
@@ -86,6 +91,7 @@ void user_code()
         // 下潜
         case dowm:
             ms5837_get_data(&depth_data[data_index], NULL);
+            // unix_time[data_index] = esp_timer_get_time()/1000000.0;;
             unix_time[data_index] = esp_timer_get_time() / 1000000.0;
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
@@ -109,28 +115,30 @@ void user_code()
             unix_time[data_index] = esp_timer_get_time() / 1000000.0;
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
-            if (depth_data[data_index] - atmosphere < target + 1)
+            if (depth_data[data_index] - atmosphere < target)
             {
-                if (steps_moved <= -200)
+                // 下沉限幅
+                if (steps_moved <= -300)
                 {
                     printf("%d\n", steps_moved);
                 }
                 else
                 {
                     stepper_move(-50);
-                    steps_moved += -50;
+                    steps_moved -= 50;
                 }
             }
-            else if (depth_data[data_index] - atmosphere > target - 1)
+            else if (depth_data[data_index] - atmosphere > target)
             {
-                if (steps_moved >= 400)
+                // 上浮限幅
+                if (steps_moved >= 300)
                 {
                     printf("%d\n", steps_moved);
                 }
                 else
                 {
-                    stepper_move(50);
-                    steps_moved += 50;
+                    stepper_move(100);
+                    steps_moved += 100;
                 }
             }
             // 定深时间
@@ -138,6 +146,7 @@ void user_code()
             {
                 reached_time = 0;
                 printf("keep,finished\n");
+                uart_write_bytes(UART_NUM_1, "keep,finished", 14);
                 state = up;
             }
             data_index++;
@@ -146,21 +155,25 @@ void user_code()
 
         // 上浮
         case up:
-            state = report;
             printf("now,up");
-            ms5837_get_data(&depth_data[data_index], NULL);
-            unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+            uart_write_bytes(UART_NUM_1, "now,up", 7);
             printf("depth: %f\n", depth_data[data_index]);
+            uart_write_bytes(UART_NUM_1, "depth: ", 7);
+            snprintf(depth_str, sizeof(depth_str), "%.2f\n", depth_data[data_index]);
+            uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
             printf("time: %f\n", unix_time[data_index]);
             while (steps_moved < 0)
             {
                 ms5837_get_data(&depth_data[data_index], NULL);
                 unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+                ;
                 stepper_move(50);
                 steps_moved += 50;
                 data_index++;
             }
             printf("up,finished");
+            uart_write_bytes(UART_NUM_1, "up,finished", 12);
+            state = report;
             break;
         // 回传
         case report:
@@ -169,13 +182,22 @@ void user_code()
                 printf("Depth: %.2f\n", depth_data[i]);
                 printf("time: %f\n", unix_time[i]);
             }
+            char depth_str[32] = {0};
+            snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f", unix_time[0] + cmd.unix_time, depth_data[0]);
+            uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
 
+            int last_unixtime = unix_time[0];
+            // 5s一个数据
             for (int i = 0; i < data_index; i++)
             {
-                char depth_str[32];
-                snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f\n", unix_time[i], depth_data[i]);
-                uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
-                vTaskDelay(pdMS_TO_TICKS(100));
+                if (unix_time[i] - last_unixtime >= 5)
+                {
+                    char depth_str[64] = {0};
+                    snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f", unix_time[i] + cmd.unix_time, depth_data[i]);
+                    uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
+                    last_unixtime = unix_time[i];
+                    vTaskDelay(pdMS_TO_TICKS(100));
+                }
             }
             data_index = 0;
             cmd.start = 0;
