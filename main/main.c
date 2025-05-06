@@ -91,8 +91,7 @@ void user_code()
         // 下潜
         case dowm:
             ms5837_get_data(&depth_data[data_index], NULL);
-            // unix_time[data_index] = esp_timer_get_time()/1000000.0;;
-            unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+            unix_time[data_index] = time(NULL);
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
             if (steps_moved == 0)
@@ -102,17 +101,16 @@ void user_code()
             }
             data_index++;
             break;
-
         // 定深
         case keep:
             if (depth_data[data_index] - atmosphere < target && reached_time == 0)
             {
-                reached_time = esp_timer_get_time() / 1000000.0;
+                reached_time = time(NULL);
                 printf("down finished\n");
                 // state = keep;
             }
             ms5837_get_data(&depth_data[data_index], NULL);
-            unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+            unix_time[data_index] = time(NULL);
             printf("depth: %f\n", depth_data[data_index]);
             printf("time: %f\n", unix_time[data_index]);
             if (depth_data[data_index] - atmosphere < target)
@@ -121,6 +119,7 @@ void user_code()
                 if (steps_moved <= -300)
                 {
                     printf("%d\n", steps_moved);
+                    vTaskDelay(pdMS_TO_TICKS(250));
                 }
                 else
                 {
@@ -134,6 +133,7 @@ void user_code()
                 if (steps_moved >= 300)
                 {
                     printf("%d\n", steps_moved);
+                    vTaskDelay(pdMS_TO_TICKS(250));
                 }
                 else
                 {
@@ -150,7 +150,7 @@ void user_code()
                 state = up;
             }
             data_index++;
-            vTaskDelay(pdMS_TO_TICKS(100));
+            vTaskDelay(pdMS_TO_TICKS(10));
             break;
 
         // 上浮
@@ -165,7 +165,7 @@ void user_code()
             while (steps_moved < 0)
             {
                 ms5837_get_data(&depth_data[data_index], NULL);
-                unix_time[data_index] = esp_timer_get_time() / 1000000.0;
+                unix_time[data_index] = time(NULL);
                 ;
                 stepper_move(50);
                 steps_moved += 50;
@@ -182,18 +182,15 @@ void user_code()
                 printf("Depth: %.2f\n", depth_data[i]);
                 printf("time: %f\n", unix_time[i]);
             }
-            char depth_str[32] = {0};
-            snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f", unix_time[0] + cmd.unix_time, depth_data[0]);
-            uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
 
-            int last_unixtime = unix_time[0];
+            int last_unixtime = -5;
             // 5s一个数据
             for (int i = 0; i < data_index; i++)
             {
                 if (unix_time[i] - last_unixtime >= 5)
                 {
                     char depth_str[64] = {0};
-                    snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f", unix_time[i] + cmd.unix_time, depth_data[i]);
+                    snprintf(depth_str, sizeof(depth_str), "%.2f,%.2f ", unix_time[i], depth_data[i]);
                     uart_write_bytes(UART_NUM_1, depth_str, strlen(depth_str));
                     last_unixtime = unix_time[i];
                     vTaskDelay(pdMS_TO_TICKS(100));
@@ -221,6 +218,7 @@ void user_code()
 
 void app_main()
 {
+    stepper_move(-1000);
     user_init();
-    user_code();
+    // user_code();
 }

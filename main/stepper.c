@@ -31,6 +31,11 @@ void stepper_init()
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
+
+    gpio_set_level(A1, 0);
+    gpio_set_level(A2, 0);
+    gpio_set_level(B1, 0);
+    gpio_set_level(B2, 0);
 }
 
 void stepper_set(int phrase)
@@ -89,19 +94,9 @@ void stepper_move(int steps)
             // vTaskDelay(pdMS_TO_TICKS(5));
         }
     }
-}
 
-void stepper_position(int target_position, int *current_position)
-{
-    if (target_position > max_lenth)
-    {
-        target_position = max_lenth;
-    }
-    if (target_position < 0)
-    {
-        target_position = 0;
-    }
-    int steps = target_position - (*current_position);
-    stepper_move(steps);
-    *current_position = target_position;
+    gpio_set_level(A1, 0);
+    gpio_set_level(A2, 0);
+    gpio_set_level(B1, 0);
+    gpio_set_level(B2, 0);
 }
